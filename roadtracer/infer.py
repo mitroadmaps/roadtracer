@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../lib')
+
 from discoverlib import geom, graph
 import model
 import model_utils
@@ -9,7 +12,6 @@ import os.path
 from PIL import Image
 import random
 import scipy.ndimage
-import sys
 import tensorflow as tf
 import time
 
@@ -18,15 +20,12 @@ SEGMENT_LENGTH = 20
 PATHS_PER_TILE_AXIS = 1
 TILE_MODE = 'sat'
 EXISTING_GRAPH_FNAME = None
-MODEL_PATH = sys.argv[1]
 DETECT_MODE = 'normal'
 THRESHOLD_BRANCH = 0.4
 THRESHOLD_FOLLOW = 0.4
 WINDOW_SIZE = 256
 SAVE_EXAMPLES = False
 FOLLOW_TARGETS = False
-
-OUTPUT_FNAME = sys.argv[2]
 
 REGION = 'chicago'
 TILE_SIZE = 4096
@@ -242,6 +241,9 @@ def graph_filter(g, threshold=0.3, min_len=None):
 	return ng
 
 if __name__ == '__main__':
+	model_path = sys.argv[1]
+	output_fname = sys.argv[2]
+
 	print 'reading tiles'
 	#tileloader.use_vhr()
 	tiles = tileloader.Tiles(PATHS_PER_TILE_AXIS, SEGMENT_LENGTH, 16, TILE_MODE)
@@ -250,7 +252,7 @@ if __name__ == '__main__':
 	model.BATCH_SIZE = 1
 	m = model.Model(tiles.num_input_channels())
 	session = tf.Session()
-	m.saver.restore(session, MODEL_PATH)
+	m.saver.restore(session, model_path)
 
 	if EXISTING_GRAPH_FNAME is None:
 		rect = geom.Rectangle(TILE_START, TILE_END)
@@ -306,4 +308,4 @@ if __name__ == '__main__':
 	compute_targets = SAVE_EXAMPLES or FOLLOW_TARGETS
 	result = eval([path], m, session, save=SAVE_EXAMPLES, compute_targets=compute_targets, follow_targets=FOLLOW_TARGETS)
 	print result
-	path.graph.save(OUTPUT_FNAME)
+	path.graph.save(output_fname)

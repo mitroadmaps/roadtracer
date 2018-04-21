@@ -22,8 +22,8 @@ func main() {
 	boundList := make([]common.Rectangle, len(regions))
 	for i, region := range regions {
 		radius := common.Point{float64(region.RadiusX+2), float64(region.RadiusY+2)}.Scale(4096)
-		extreme1 := googlemaps.PixelToLonLat(common.Point{-256, -256}.Sub(radius), region.CenterWorld, ZOOM)
-		extreme2 := googlemaps.PixelToLonLat(common.Point{256, 256}.Add(radius), region.CenterWorld, ZOOM)
+		extreme1 := googlemaps.PixelToLonLat(common.Point{-256, -256}.Sub(radius), region.CenterGPS, ZOOM)
+		extreme2 := googlemaps.PixelToLonLat(common.Point{256, 256}.Add(radius), region.CenterGPS, ZOOM)
 		r := extreme1.Bounds().Extend(extreme2)
 		boundList[i] = r
 		fmt.Printf("%s: %v\n", region.Name, r)

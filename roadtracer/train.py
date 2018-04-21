@@ -1,5 +1,8 @@
+import sys
+sys.path.append('../lib')
+
 from discoverlib import geom, graph
-import model_m4d as model
+import model
 import model_utils
 import tileloader
 import infer
@@ -12,7 +15,6 @@ import os.path
 from PIL import Image
 import random
 import scipy.ndimage
-import sys
 import tensorflow as tf
 import time
 

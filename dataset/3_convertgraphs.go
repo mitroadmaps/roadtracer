@@ -20,15 +20,12 @@ func main() {
 	regions := lib.GetRegions()
 
 	for _, region := range regions {
-		if region.Name != "dammam" {
-			continue
-		}
 		graph, err := common.ReadGraph(fmt.Sprintf("%s/%s.graph", inDir, region.Name))
 		if err != nil {
 			panic(err)
 		}
 		for _, node := range graph.Nodes {
-			node.Point = googlemaps.LonLatToPixel(node.Point, region.CenterWorld, ZOOM)
+			node.Point = googlemaps.LonLatToPixel(node.Point, region.CenterGPS, ZOOM)
 		}
 
 		bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s.tunnel.json", inDir, region.Name))

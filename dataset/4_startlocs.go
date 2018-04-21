@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"math/rand"
+	"os"
 )
 
 const ZOOM = 18
@@ -86,7 +86,7 @@ func main() {
 		edges := rtrees[region.Name].Search(rect.AddTol(-256))
 		startingLocations := selectRandomLocations(edges, 512)
 		if len(startingLocations) == 0 {
-			fmt.Printf("skipping tile %s_%d_%d since no edges (%v)\n", region.Name, x, y, googlemaps.PixelToLonLat(rect.Min, region.CenterWorld, ZOOM))
+			fmt.Printf("skipping tile %s_%d_%d since no edges (%v)\n", region.Name, x, y, googlemaps.PixelToLonLat(rect.Min, region.CenterGPS, ZOOM))
 			return
 		}
 

@@ -3,19 +3,17 @@ package main
 import (
 	"./lib"
 	"github.com/mitroadmaps/gomapinfer/common"
+	"github.com/mitroadmaps/gomapinfer/googlemaps"
 
 	"fmt"
-	"math"
 	"os"
 )
 
 const ZOOM = 18
 
 func main() {
-	widthWorld := 2 * math.Pi * 6378137 / math.Exp2(ZOOM) / 256 // meters per pixel
-
 	var region lib.Region
-	for _, r := range lib.GetRegions(widthWorld) {
+	for _, r := range lib.GetRegions() {
 		if r.Name == os.Args[1] {
 			region = r
 			break
@@ -29,9 +27,9 @@ func main() {
 
 	for _, node := range graph.Nodes {
 		if mode == "frompix" {
-			node.Point = lib.PixelToLonLat(node.Point, region.CenterWorld, widthWorld)
+			node.Point = googlemaps.PixelToLonLat(node.Point, region.CenterGPS, ZOOM)
 		} else if mode == "topix" {
-			node.Point = lib.LonLatToPixel(node.Point, region.CenterWorld, widthWorld)
+			node.Point = googlemaps.LonLatToPixel(node.Point, region.CenterGPS, ZOOM)
 		} else {
 			fmt.Errorf("bad mode %s, must be frompix or topix\n", mode)
 		}
