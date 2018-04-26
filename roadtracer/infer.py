@@ -140,7 +140,7 @@ def eval(paths, m, session, max_path_length=MAX_PATH_LENGTH, segment_length=SEGM
 			batch_detect_targets.append(path_detect_target)
 
 			if compute_targets:
-				targets, _ = model_utils.compute_targets_by_best(paths[path_idx], extension_vertices[i], segment_length)
+				targets = model_utils.compute_targets_by_best(paths[path_idx], extension_vertices[i], segment_length)
 				angle_targets, stop_targets = action_to_vector(targets)
 				batch_angle_targets[i, :] = angle_targets
 				batch_stop_targets[i, :] = stop_targets

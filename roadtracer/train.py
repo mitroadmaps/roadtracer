@@ -174,7 +174,7 @@ for outer_it in xrange(outer_it+1, 400):
 			batch_inputs.append(path_input)
 			batch_detect_targets.append(path_detect_target)
 
-			targets, _ = model_utils.compute_targets_by_best(paths[path_idx], extension_vertex, SEGMENT_LENGTH)
+			targets = model_utils.compute_targets_by_best(paths[path_idx], extension_vertex, SEGMENT_LENGTH)
 			angle_targets, action_targets = action_to_vector(targets)
 			batch_angle_targets[i, :] = angle_targets
 			batch_action_targets[i, :] = action_targets
