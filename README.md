@@ -14,10 +14,19 @@ You will need gomapinfer (https://github.com/mitroadmaps/gomapinfer/) as a depen
 
 The training/inference code is built on top of TensorFlow.
 
+Usage
+-----
+
+First, follow instructions in dataset/ to download the dataset.
+
+Then, follow instructions in the other folders to train a model and run inference.
+
 Applying RoadTracer on a new region
 -----------------------------------
 
-First, we need to download the imagery. Update `dataset/lib/regions.go` and put a latitude/longitude bounding box around your region in the regionMap. You can comment out the existing regions. Then, follow instructions in dataset/ for running `1_sat.go`.
+You need to make a few modifications to run the code on a region outside of the 40-city RoadTracer dataset.
+
+First, download the imagery. Update `dataset/lib/regions.go` and put a latitude/longitude bounding box around your region in the regionMap. You can comment out the existing regions. Then, follow instructions in dataset/ for running `1_sat.go`.
 
 Then, update `roadtracer/tileloader.py` and set `TRAINING_REGIONS` and `REGIONS` to just a list with your region label from the regionMap. Also update `REGION`, `TILE_START`, and `TILE_END` in `infer.py` (e.g. if your imagery tiles were saved as `xyz_-1_-1_sat.png` through `xyz_1_1_sat.png`, set `TILE_START = -1, -1` and `TILE_END = 2, 2`.
 
