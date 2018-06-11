@@ -228,7 +228,7 @@ class Tiles(object):
 		return len(self.train_tiles)
 
 	def num_input_channels(self):
-		return 3
+		return 5
 
 	def get_training_tile_data(self, tile_idx):
 		tile = self.train_tiles[tile_idx]
