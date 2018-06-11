@@ -21,6 +21,21 @@ First, follow instructions in dataset/ to download the dataset.
 
 Then, follow instructions in the other folders to train a model and run inference.
 
+Junction Metric
+---------------
+
+The junction metric matches junctions (any vertex with three or more incident edges) between a ground truth road network graph and an inferred one.
+
+	go run junction_metric.go /data/graphs/chicago.graph chicago.out.graph chicago
+
+Visualization
+-------------
+
+`viz.go` will generate an SVG from a road network graph. It will refer to the `/data/testsat/` images; to view the SVG, those images will need to be in the same folder as the generated SVG.
+
+	go run viz.go chicago /data/graphs/chicago.graph
+	go run viz.go chicago chicago.out.graph
+
 Applying RoadTracer on a new region
 -----------------------------------
 

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"../common"
+	"github.com/mitroadmaps/gomapinfer/common"
 
 	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
-	"strings"
 )
 
 const DEFAULT_INTERSECTION_CLUSTER_RADIUS = 50
