@@ -11,7 +11,7 @@ Now we can train the model.
 	mkdir /data/model/
 	mkdir /data/model/model_latest
 	mkdir /data/model/model_best
-	python train.py /data/model/
+	python train.py /data/model/ --t /data/imagery/ --g /data/graphs/ --j /data/json/
 
 
 Inference

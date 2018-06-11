@@ -18,6 +18,20 @@ import scipy.ndimage
 import tensorflow as tf
 import time
 
+import argparse
+parser = argparse.ArgumentParser(description='Train a RoadTracer model.')
+parser.add_argument('modelpath', help='path to save model')
+parser.add_argument('--t', help='tiles/imagery path')
+parser.add_argument('--g', help='imagery path')
+parser.add_argument('--j', help='path to directory containing pytiles.json/starting_locations.json')
+args = parser.parse_args()
+
+if args.t: tileloader.tile_dir = args.t
+if args.g: tileloader.graph_dir = args.g
+if args.j:
+	tileloader.pytiles_path = os.path.join(args.j, 'pytiles.json')
+	tileloader.startlocs_path = os.path.join(args.j, 'starting_locations.json')
+
 MAX_PATH_LENGTH = 8192
 SEGMENT_LENGTH = 20
 PARALLEL_TILES = 256
@@ -26,7 +40,7 @@ PATHS_PER_TILE_AXIS = 2
 TILE_MODE = 'sat'
 SAVE_EXAMPLES = True
 DETECT_MODE = 'normal'
-MODEL_BASE = sys.argv[1]
+MODEL_BASE = args.modelpath
 WINDOW_SIZE = 256
 FOLLOW_TARGETS = False
 THRESHOLD = 0.4
