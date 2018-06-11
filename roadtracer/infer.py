@@ -241,8 +241,34 @@ def graph_filter(g, threshold=0.3, min_len=None):
 	return ng
 
 if __name__ == '__main__':
-	model_path = sys.argv[1]
-	output_fname = sys.argv[2]
+	import argparse
+	parser = argparse.ArgumentParser(description='Run RoadTracer inference.')
+	parser.add_argument('modelpath', help='trained model path')
+	parser.add_argument('outname', help='output filename to save inferred road network graph')
+	parser.add_argument('--s', help='stop threshold (default 0.4)', default=0.4)
+	parser.add_argument('--r', help='region (default chicago)', default='chicago')
+	parser.add_argument('--t', help='tiles/imagery path')
+	parser.add_argument('--g', help='graph path')
+	parser.add_argument('--j', help='path to directory containing pytiles.json/starting_locations.json')
+	args = parser.parse_args()
+	model_path = args.modelpath
+	output_fname = args.outname
+	BRANCH_THRESHOLD = args.s
+	FOLLOW_THRESHOLD = args.s
+	REGION = args.r
+	if REGION == 'boston':
+		TILE_START = geom.Point(1, -1).scale(TILE_SIZE)
+	elif REGION == 'chicago':
+		TILE_START = geom.Point(-1, -2).scale(TILE_SIZE)
+	else:
+		TILE_START = geom.Point(-1, -1).scale(TILE_SIZE)
+	TILE_END = TILE_START.add(geom.Point(2, 2).scale(TILE_SIZE))
+
+	if args.t: tileloader.tile_dir = args.t
+	if args.g: tileloader.graph_dir = args.g
+	if args.j:
+		tileloader.pytiles_path = os.path.join(args.j, 'pytiles.json')
+		tileloader.startlocs_path = os.path.join(args.j, 'starting_locations.json')
 
 	print 'reading tiles'
 	#tileloader.use_vhr()

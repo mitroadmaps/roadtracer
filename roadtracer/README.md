@@ -17,10 +17,8 @@ Now we can train the model.
 Inference
 ---------
 
-First, update `infer.py` (`MODEL_PATH`, `REGION`, and `TILE_START`/`TILE_END`).
+Run `infer.py`:
 
-Then:
-
-	python infer.py /data/model/model_latest/model out.graph
+	python infer.py /data/model/model_latest/model out.graph --t /data/imagery/ --g /data/graphs/ --j /data/json/
 
 This will output `out.graph`.

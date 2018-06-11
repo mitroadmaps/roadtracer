@@ -22,7 +22,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Train a RoadTracer model.')
 parser.add_argument('modelpath', help='path to save model')
 parser.add_argument('--t', help='tiles/imagery path')
-parser.add_argument('--g', help='imagery path')
+parser.add_argument('--g', help='graph path')
 parser.add_argument('--j', help='path to directory containing pytiles.json/starting_locations.json')
 args = parser.parse_args()
 
