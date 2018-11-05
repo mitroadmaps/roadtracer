@@ -250,6 +250,8 @@ if __name__ == '__main__':
 	parser.add_argument('--t', help='tiles/imagery path')
 	parser.add_argument('--g', help='graph path')
 	parser.add_argument('--j', help='path to directory containing pytiles.json/starting_locations.json')
+	parser.add_argument('--e', help='existing graph to get starting locations from')
+	parser.add_argument('--f', help='filter threshold to filter output edges (e.g. 0.75, default disabled)', default=0)
 	args = parser.parse_args()
 	model_path = args.modelpath
 	output_fname = args.outname
@@ -332,6 +334,28 @@ if __name__ == '__main__':
 			path.prepend_search_vertex(vertex)
 
 	compute_targets = SAVE_EXAMPLES or FOLLOW_TARGETS
-	result = eval([path], m, session, save=SAVE_EXAMPLES, compute_targets=compute_targets, follow_targets=FOLLOW_TARGETS)
+	if args.e:
+		ng = graph.read_graph(args.e)
+		pg = graph.Graph()
+		path = model_utils.Path(None, tile_data, g=pg)
+		for edge in ng.edges:
+			r = edge.segment().bounds().add_tol(100)
+			nearby_edges = path.edge_rtree.intersection((r.start.x, r.start.y, r.end.x, r.end.y))
+			if len(list(nearby_edges)) > 0:
+				print 'skip {}'.format(edge.id)
+				continue
+			print 'process {}'.format(edge.id)
+			v1 = pg.add_vertex(edge.src.point)
+			v2 = pg.add_vertex(edge.dst.point)
+			v1.edge_pos = None
+			v2.edge_pos = None
+			#path._add_bidirectional_edge(v1, v2)
+			path.prepend_search_vertex(v1)
+			path.prepend_search_vertex(v2)
+			result = eval([path], m, session, save=False, compute_targets=compute_targets, follow_targets=FOLLOW_TARGETS)
+	else:
+		result = eval([path], m, session, save=SAVE_EXAMPLES, compute_targets=compute_targets, follow_targets=FOLLOW_TARGETS)
 	print result
+	if args.f > 0:
+		path.graph = graph_filter(path.graph, threshold=0.75, min_len=8)
 	path.graph.save(output_fname)
