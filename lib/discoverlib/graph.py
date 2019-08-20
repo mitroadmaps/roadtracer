@@ -1,4 +1,5 @@
 import geom
+import grid_index
 
 import math
 import numpy
@@ -21,6 +22,9 @@ class Vertex(object):
 
 	def neighbors(self):
 		return self._neighbors().keys()
+
+	def __repr__(self):
+		return 'Vertex({}, {}, {} in {} out)'.format(self.id, self.point, len(self.in_edges), len(self.out_edges))
 
 class Edge(object):
 	def __init__(self, id, src, dst):
@@ -50,6 +54,12 @@ class Edge(object):
 	def is_adjacent(self, edge):
 		return edge.src == self.src or edge.src == self.dst or edge.dst == self.src or edge.dst == self.dst
 
+	def orig_id(self):
+		if hasattr(self, 'orig_edge_id'):
+			return self.orig_edge_id
+		else:
+			return self.id
+
 class EdgePos(object):
 	def __init__(self, edge, distance):
 		self.edge = edge
@@ -76,14 +86,18 @@ class Index(object):
 		return [self.graph.edges[edge_id] for edge_id in edge_ids]
 
 	def subgraph(self, rect):
-		ng = Graph()
-		vertex_map = {}
-		for edge in self.search(rect):
-			for vertex in [edge.src, edge.dst]:
-				if vertex not in vertex_map:
-					vertex_map[vertex] = ng.add_vertex(vertex.point)
-			ng.add_edge(vertex_map[edge.src], vertex_map[edge.dst])
-		return ng
+		return graph_from_edges(self.search(rect))
+
+def graph_from_edges(edges):
+	ng = Graph()
+	vertex_map = {}
+	for edge in edges:
+		for vertex in [edge.src, edge.dst]:
+			if vertex not in vertex_map:
+				vertex_map[vertex] = ng.add_vertex(vertex.point)
+		nedge = ng.add_edge(vertex_map[edge.src], vertex_map[edge.dst])
+		nedge.orig_edge_id = edge.orig_id()
+	return ng
 
 class Graph(object):
 	def __init__(self):
@@ -95,9 +109,17 @@ class Graph(object):
 		self.vertices.append(vertex)
 		return vertex
 
+	def find_edge(self, src, dst):
+		for edge in src.out_edges:
+			if edge.dst == dst:
+				return edge
+		return None
+
 	def add_edge(self, src, dst):
 		if src == dst:
 			raise Exception('cannot add edge between same vertex')
+		elif self.find_edge(src, dst):
+			return self.find_edge(src, dst)
 		edge = Edge(len(self.edges), src, dst)
 		self.edges.append(edge)
 		src.out_edges.append(edge)
@@ -110,12 +132,22 @@ class Graph(object):
 			self.add_edge(dst, src),
 		)
 
+	def make_bidirectional(self):
+		for edge in self.edges:
+			self.add_edge(edge.dst, edge.src)
+
 	def edgeIndex(self):
 		rt = rtree.index.Index()
 		for edge in self.edges:
 			bounds = edge.bounds()
 			rt.insert(edge.id, (bounds.start.x, bounds.start.y, bounds.end.x, bounds.end.y))
 		return Index(self, rt)
+
+	def edge_grid_index(self, size):
+		index = grid_index.GridIndex(size)
+		for edge in self.edges:
+			index.insert_rect(edge.bounds(), edge)
+		return index
 
 	def bounds(self):
 		r = None
@@ -144,7 +176,7 @@ class Graph(object):
 			e = other.add_edge(other.vertices[edge.src.id], other.vertices[edge.dst.id])
 		return other
 
-	def filter_edges(self, filter_edges):
+	def filter_edges(self, filter_edges, keep_attrs=None):
 		g = Graph()
 		vertex_map = {}
 		for edge in self.edges:
@@ -153,10 +185,60 @@ class Graph(object):
 			for vertex in [edge.src, edge.dst]:
 				if vertex not in vertex_map:
 					vertex_map[vertex] = g.add_vertex(vertex.point)
+			new_edge = g.add_edge(vertex_map[edge.src], vertex_map[edge.dst])
+			if keep_attrs:
+				for k in keep_attrs:
+					if hasattr(edge, k):
+						setattr(new_edge, k, getattr(edge, k))
+		return g
+
+	def split_edge(self, edge, length):
+		point = edge.segment().point_at_factor(length)
+		new_vertex = self.add_vertex(point)
+
+		orig_src, orig_dst = edge.src, edge.dst
+		opp_edge = edge.get_opposite_edge()
+
+		edge.dst = new_vertex
+		orig_dst.in_edges.remove(edge)
+		new_vertex.in_edges.append(edge)
+		remainder_edge = self.add_edge(new_vertex, orig_dst)
+		remainder_edge.orig_edge_id = edge.orig_id()
+
+		if opp_edge:
+			opp_edge.src = new_vertex
+			orig_dst.out_edges.remove(opp_edge)
+			new_vertex.out_edges.append(opp_edge)
+			e = self.add_edge(orig_dst, new_vertex)
+			e.orig_edge_id = opp_edge.orig_id()
+
+		return remainder_edge
+
+	def union(self, other):
+		g = self.clone()
+		vertex_map = {}
+		for edge in other.edges:
+			for vertex in [edge.src, edge.dst]:
+				if vertex not in vertex_map:
+					vertex_map[vertex] = g.add_vertex(vertex.point)
 			g.add_edge(vertex_map[edge.src], vertex_map[edge.dst])
 		return g
 
-def read_graph(fname, merge_duplicates=False):
+	def closest_vertex(self, p):
+		best_vertex = None
+		best_distance = None
+		for vertex in self.vertices:
+			d = vertex.point.distance(p)
+			if best_vertex is None or d < best_distance:
+				best_vertex = vertex
+				best_distance = d
+		return best_vertex
+
+def read_graph(fname, merge_duplicates=False, fpoint=False):
+	point_obj = geom.Point
+	if fpoint:
+		point_obj = geom.FPoint
+
 	graph = Graph()
 	with open(fname, 'r') as f:
 		vertex_section = True
@@ -167,7 +249,7 @@ def read_graph(fname, merge_duplicates=False):
 			parts = line.strip().split(' ')
 			if vertex_section:
 				if len(parts) >= 2:
-					point = geom.Point(float(parts[0]), float(parts[1]))
+					point = point_obj(float(parts[0]), float(parts[1]))
 					if point in seen_points and merge_duplicates:
 						print 'merging duplicate vertex at {}'.format(point)
 						vertices[next_vertex_id] = seen_points[point]
@@ -571,3 +653,25 @@ def get_nearby_vertices(vertex, n):
 			search(edge.dst, remaining - 1)
 	search(vertex, n)
 	return nearby_vertices
+
+def get_nearby_vertices_by_distance(vertex, distance):
+	nearby_vertices = set([vertex])
+	search_queue = []
+	search_queue.append((vertex, distance))
+	while len(search_queue) > 0:
+		vertex, remaining = search_queue[0]
+		search_queue = search_queue[1:]
+		if remaining <= 0:
+			continue
+		for edge in vertex.out_edges:
+			if edge.dst in nearby_vertices:
+				continue
+			nearby_vertices.add(edge.dst)
+			search_queue.append((edge.dst, remaining - edge.segment().length()))
+	return nearby_vertices
+
+def densify(g, length, epsilon=0.1):
+	for edge in g.edges:
+		n_split = int(edge.segment().length() / length - epsilon)
+		for i in xrange(n_split):
+			edge = g.split_edge(edge, length)

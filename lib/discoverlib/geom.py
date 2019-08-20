@@ -1,4 +1,5 @@
 import math
+import numpy
 
 class Point(object):
 	def __init__(self, x, y):
@@ -42,6 +43,13 @@ class Point(object):
 	def dot(self, point):
 		return self.x * point.x + self.y * point.y
 
+	def rotate(self, center, angle):
+		dx = self.x - center.x
+		dy = self.y - center.y
+		rx = math.cos(angle)*dx - math.sin(angle)*dy
+		ry = math.sin(angle)*dx + math.cos(angle)*dy
+		return Point(center.x + int(rx), center.y + int(ry))
+
 	def __repr__(self):
 		return 'Point({}, {})'.format(self.x, self.y)
 
@@ -73,6 +81,9 @@ class FPoint(object):
 	def scale(self, f):
 		return FPoint(self.x * f, self.y * f)
 
+	def scale_to_length(self, l):
+		return self.scale(l / self.magnitude())
+
 	def magnitude(self):
 		return math.sqrt(self.x * self.x + self.y * self.y)
 
@@ -90,11 +101,26 @@ class FPoint(object):
 	def signed_angle(self, other):
 		return math.atan2(other.y, other.x) - math.atan2(self.y, self.x)
 
+	def bounds(self):
+		return Rectangle(self, self)
+
 	def dot(self, point):
 		return self.x * point.x + self.y * point.y
 
 	def __repr__(self):
 		return 'FPoint({}, {})'.format(self.x, self.y)
+
+	def to_point(self):
+		return Point(self.x, self.y)
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y
+
+	def __ne__(self, other):
+		return not self.__eq__(other)
+
+	def __hash__(self):
+		return hash((self.x, self.y))
 
 class Segment(object):
 	def __init__(self, start, end):
@@ -205,6 +231,26 @@ class Rectangle(object):
 	def intersects(self, other):
 		return self.end.y >= other.start.y and other.end.y >= self.start.y and self.end.x >= other.start.x and other.end.x >= self.start.x
 
+	def scale(self, f):
+		return Rectangle(self.start.scale(f), self.end.scale(f))
+
+	def intersection(self, other):
+		intersection = Rectangle(
+			Point(max(self.start.x, other.start.x), max(self.start.y, other.start.y)),
+			Point(min(self.end.x, other.end.x), min(self.end.y, other.end.y))
+		)
+		if intersection.end.x <= intersection.start.x:
+			intersection.end.x = intersection.start.x
+		if intersection.end.y <= intersection.start.y:
+			intersection.end.y = intersection.start.y
+		return intersection
+
+	def area(self):
+		return (self.end.x - self.start.x) * (self.end.y - self.start.y)
+
+	def __repr__(self):
+		return 'Rectangle({}, {})'.format(self.start, self.end)
+
 def draw_line(start, end, lengths):
 	# followX indicates whether to move along x or y coordinates
 	followX = abs(end.y - start.y) <= abs(end.x - start.x)
@@ -253,6 +299,24 @@ def draw_line(start, end, lengths):
 			current_error -= delta.x
 
 	return points
+
+def draw_lines(segments, im=None, shape=None):
+	from eyediagram._brescount import bres_segments_count
+	if not shape:
+		if not im:
+			raise Exception('shape or im must be provided')
+		shape = im.shape
+	tmpim = numpy.zeros((shape[0], shape[1]), dtype='int32')
+
+	sticks = numpy.zeros((len(segments), 4), dtype='int32')
+	for i, segment in enumerate(segments):
+		sticks[i] = [segment.start.x, segment.start.y, segment.end.x, segment.end.y]
+	bres_segments_count(sticks, tmpim)
+	tmpim = tmpim > 0
+	if im:
+		return numpy.logical_or(im, tmpim)
+	else:
+		return tmpim
 
 def vector_from_angle(angle, length):
 	return Point(math.cos(angle) * length, math.sin(angle) * length)
